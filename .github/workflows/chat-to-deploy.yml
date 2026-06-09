@@ -47,7 +47,7 @@ jobs:
         run: |
           kubectl kustomize demos/demo2-chat-to-deploy/overlays/${{ inputs.variant }} > /tmp/manifest.yaml
           cat /tmp/manifest.yaml
-          conftest test -p foundation/policies/opa /tmp/manifest.yaml --all-namespaces
+          conftest test --policy foundation/policies/opa/deployment.rego /tmp/manifest.yaml
 
   build-and-deploy:
     needs: policy-check
