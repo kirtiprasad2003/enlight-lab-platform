@@ -6,9 +6,9 @@ metadata:
 spec:
   project: enlight-lab
   source:
-    repoURL: https://github.com/YOUR_ORG/enlight-lab-platform.git
+    repoURL: https://github.com/kirtiprasad2003/enlight-lab-platform.git
     targetRevision: main
-    path: demos/demo2-chat-to-deploy/overlays/compliant
+    path: demos/demo2-chat-to-deploy/overlays/local
   destination:
     server: https://kubernetes.default.svc
     namespace: enlight-staging
