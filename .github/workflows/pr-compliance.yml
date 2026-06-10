@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install conftest
         run: |
@@ -23,10 +25,16 @@ jobs:
       - name: Secret scan (changed Python files)
         run: |
           set -e
-          for f in $(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.py$' || true); do
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep '\.py$' || true)
+          if [ ${#changed[@]} -eq 0 ]; then
+            echo "No Python files changed in this PR"
+          fi
+          for f in "${changed[@]}"; do
             [ -f "$f" ] || continue
             echo "Checking $f"
-            if grep -qE '(api[_-]?key|password)\s*=\s*"[^"]{8,}"' "$f"; then
+            if grep -qiE '(api[_-]?key|password)\s*=\s*"[^"]{8,}"' "$f"; then
               echo "::error::SEC-001 Hardcoded secret in $f"
               exit 1
             fi
@@ -35,7 +43,14 @@ jobs:
 
       - name: Terraform S3 policy (changed files)
         run: |
-          for f in $(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.tf$' || true); do
+          set -e
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep '\.tf$' || true)
+          if [ ${#changed[@]} -eq 0 ]; then
+            echo "No Terraform files changed in this PR"
+          fi
+          for f in "${changed[@]}"; do
             [ -f "$f" ] || continue
             echo "Checking $f"
             if grep -q 'public-read' "$f"; then
@@ -47,7 +62,9 @@ jobs:
 
       - name: K8s manifest policy (if changed)
         run: |
-          for f in $(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(yaml|yml)$' | grep -E 'k8s|overlays' || true); do
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          for f in $(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -E '\.(yaml|yml)$' | grep -E 'k8s|overlays' || true); do
             [ -f "$f" ] || continue
             conftest test --policy foundation/policies/opa/deployment.rego --namespace enlight.deployment "$f" || exit 1
           done

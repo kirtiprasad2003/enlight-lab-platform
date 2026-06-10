@@ -47,22 +47,28 @@ Files checked by ``pr-compliance.yml``:
 - ``$relRun/service-config.py`` (secret scan)
 - ``$relRun/storage.tf`` (S3 policy)
 
-*Auto-generated for client demo — do not merge.*
+*Auto-generated for client demo - do not merge.*
 "@
 Set-Content -Path (Join-Path $RunDir "README.md") -Value $readme -Encoding UTF8
 
 Push-Location $Root
+$prevErr = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
 try {
     git fetch origin $BaseBranch 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "git fetch failed" }
+
     git checkout -B $Branch "origin/$BaseBranch" 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "git checkout failed" }
 
     git add $relRun
-    git commit -m "Demo 5: $Variant compliance check ($Stamp)" 2>&1
+    git commit -m "Demo 5: $Variant compliance check ($Stamp)" 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Nothing to commit or commit failed" }
 
-    git push -u origin $Branch 2>&1
+    git push -u origin $Branch 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "git push failed" }
 } finally {
+    $ErrorActionPreference = $prevErr
     Pop-Location
 }
 
@@ -71,21 +77,27 @@ $title = if ($Variant -eq "compliant") {
 } else {
     "Demo 5: NON-COMPLIANT config ($Stamp)"
 }
-$body = @{
-    title = $title
-    head  = $Branch
-    base  = $BaseBranch
-    body  = @"
-## PR compliance bot — live demo
+$expectedCi = if ($Variant -eq "compliant") {
+    "PASS - merge allowed"
+} else {
+    "FAIL - secrets / S3 policy violation"
+}
+$prBody = @"
+## PR compliance bot - live demo
 
 **Variant:** ``$Variant``  
 **Run id:** ``$Stamp``
 
 Expected CI:
-- $(if ($Variant -eq "compliant") { "PASS — merge allowed" } else { "FAIL — secrets / S3 policy violation" })
+- $expectedCi
 
-*Demo PR — close after presentation.*
+*Demo PR - close after presentation.*
 "@
+$body = @{
+    title = $title
+    head  = $Branch
+    base  = $BaseBranch
+    body  = $prBody
 } | ConvertTo-Json
 
 $pr = Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/$Repo/pulls" -Headers $headers -Body $body -ContentType "application/json"
