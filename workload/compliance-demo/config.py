@@ -1,6 +1,8 @@
-# Demo 5 PR - intentional non-compliant change for compliance bot demo
-API_KEY = "sk-live-abcdef1234567890"
-DATABASE_PASSWORD = "super-secret-password-123"
+# COMPLIANT - secrets from environment
+import os
+
+API_KEY = os.environ.get("API_KEY")
+DATABASE_PASSWORD = os.environ.get("DATABASE_PASSWORD")
 
 def connect():
     return API_KEY
