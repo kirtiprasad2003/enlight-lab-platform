@@ -16,6 +16,8 @@ spec:
       labels:
         app: demo-api
         team: enlight-demo
+        incident/investigated: "2026-06-10T10:39:33.0725854+05:30"
+        incident/root-cause: "probe threshold tuned after AI analysis"
     spec:
       containers:
         - name: api
@@ -30,7 +32,7 @@ spec:
             httpGet:
               path: /health
               port: 8000
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
           readinessProbe:
             httpGet:
               path: /health

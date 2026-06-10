@@ -33,15 +33,17 @@ jobs:
           done
           echo "Secret scan passed"
 
-      - name: Terraform S3 policy (sample paths)
+      - name: Terraform S3 policy (changed files)
         run: |
-          for f in $(find demos/demo5-pr-compliance/samples -name '*.tf' 2>/dev/null || true); do
+          for f in $(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.tf$' || true); do
+            [ -f "$f" ] || continue
             echo "Checking $f"
             if grep -q 'public-read' "$f"; then
               echo "::error::S3-001 Public bucket in $f"
               exit 1
             fi
           done
+          echo "Terraform policy passed"
 
       - name: K8s manifest policy (if changed)
         run: |
