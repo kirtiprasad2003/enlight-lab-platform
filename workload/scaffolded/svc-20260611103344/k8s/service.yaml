@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-20260611103344
+  namespace: enlight-staging
+  labels:
+    app: svc-20260611103344
+spec:
+  selector:
+    app: svc-20260611103344
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
